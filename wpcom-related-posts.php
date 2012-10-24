@@ -30,6 +30,12 @@ class WPCOM_Related_Posts {
 	public $is_elastic_search;
 	public $index;
 
+	public $options_capability = 'manage_options';
+	public $default_options = array();
+	public $options = array();
+
+	const key = 'wpcom-related-posts';
+
 	private static $instance;
 
 	public static function instance() {
@@ -47,9 +53,17 @@ class WPCOM_Related_Posts {
 	private function setup_actions() {
 
 		add_action( 'init', array( self::$instance, 'action_init' ) );
+
+		add_action( 'admin_init', array( self::$instance, 'action_admin_init' ) );
+		add_action( 'admin_menu', array( self::$instance, 'action_admin_menu' ) );
 	}
 
 	public function action_init() {
+
+		$this->default_options = array(
+				'post-types' => array(),
+			);
+		$this->options = get_option( self::key, $this->default_options );
 
 		// If Elastic Search exists, let's use that
 		$es_path = WP_CONTENT_DIR . '/plugins/elasticsearch.php';
@@ -73,6 +87,58 @@ class WPCOM_Related_Posts {
 
 	public function admin_notice_no_index() {
 		echo '<div class="error"><p>' . __( 'WordPress.com Related Posts needs a little extra configuration behind the scenes. Please contact support to make it happen.' ) . '</p></div>';
+	}
+
+	public function action_admin_init() {
+
+		register_setting( self::key, self::key, array( self::$instance, 'sanitize_options' ) );
+		add_settings_section( 'general', false, '__return_false', self::key );
+		add_settings_field( 'post-types', __( 'Enable for these post types:', 'wpcom-related-posts' ), array( self::$instance, 'setting_post_types' ), self::key, 'general' );
+	}
+
+	public function action_admin_menu() {
+
+		add_options_page( __( 'WordPress.com Related Posts', 'wpcom-related-posts' ), __( 'Related Posts', 'wpcom-related-posts' ), $this->options_capability, self::key, array( self::$instance, 'view_settings_page' ) );
+	}
+
+	public function setting_post_types() {
+		$all_post_types = get_post_types( array( 'publicly_queryable' => true ), 'objects' );
+		foreach( $all_post_types as $post_type ) {
+			echo '<label for="' . esc_attr( 'post-type-' . $post_type->name ) . '">';
+			echo '<input id="' . esc_attr( 'post-type-' . $post_type->name ) . '" type="checkbox" name="' . self::key . '[post-types][]" ';
+			if ( ! empty( $this->options['post-types'] ) && in_array( $post_type->name, $this->options['post-types'] ) )
+				echo ' checked="checked"';
+			echo ' value="' . esc_attr( $post_type->name ) . '" />&nbsp&nbsp;';
+			echo $post_type->labels->name;
+			echo '</label><br />';
+		}
+	}
+
+	public function sanitize_options( $in ) {
+
+		$out = $this->default_options;
+
+		// Validate the post types
+		$valid_post_types = get_post_types( array( 'publicly_queryable' => true ) );
+		foreach( $in['post-types'] as $maybe_post_type ) {
+			if ( in_array( $maybe_post_type, $valid_post_types ) )
+				$out['post-types'][] = $maybe_post_type;
+		}
+
+		return $out;
+	}
+
+	public function view_settings_page() {
+	?><div class="wrap">
+		<h2><?php _e( 'WordPress.com Related Posts', 'wpcom-related-posts' ); ?></h2>
+		<p><?php _e( 'Related posts for the bottom of your content using WordPress.com infrastructure', 'wpcom-related-posts' ); ?></p>
+		<form action="options.php" method="POST">
+			<?php settings_fields( self::key ); ?>
+			<?php do_settings_sections( self::key ); ?>
+			<?php submit_button(); ?>
+		</form>
+	</div>
+	<?php
 	}
 
 	/**
