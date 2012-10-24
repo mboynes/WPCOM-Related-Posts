@@ -217,8 +217,10 @@ class WPCOM_Related_Posts {
 			$keywords = $this->get_keywords( $current_post->post_title ) + $this->get_keywords( $current_post->post_content ) ;
 			$query = implode( ' ', array_unique( $keywords ) );
 			$es_args = array(
-					'query_string'         => array(
-							'query'       => $query,
+					'more_like_this'          => array(
+							'like_text'       => $query,
+							'min_term_freq'   => 1,
+							'max_query_terms' => 12,
 						),
 					'name'                => parse_url( site_url(), PHP_URL_HOST ),
 					'size'                => (int)$args['posts_per_page'] + 1,
