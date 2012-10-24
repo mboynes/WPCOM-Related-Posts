@@ -42,6 +42,7 @@ class WPCOM_Related_Posts {
 		if ( ! isset( self::$instance ) ) {
 			self::$instance = new WPCOM_Related_Posts;
 			self::$instance->setup_actions();
+			self::$instance->setup_filters();
 		}
 		return self::$instance;
 	}
@@ -53,9 +54,15 @@ class WPCOM_Related_Posts {
 	private function setup_actions() {
 
 		add_action( 'init', array( self::$instance, 'action_init' ) );
+		add_action( 'wp_head', array( self::$instance, 'action_wp_head' ) );
 
 		add_action( 'admin_init', array( self::$instance, 'action_admin_init' ) );
 		add_action( 'admin_menu', array( self::$instance, 'action_admin_menu' ) );
+	}
+
+	private function setup_filters() {
+
+		add_filter( 'the_content', array( self::$instance, 'filter_the_content' ) );
 	}
 
 	public function action_init() {
@@ -139,6 +146,49 @@ class WPCOM_Related_Posts {
 		</form>
 	</div>
 	<?php
+	}
+
+	/**
+	 * Basic styling for the related posts so they don't look terrible
+	 */
+	public function action_wp_head() {
+		?>
+		<style>
+			.wpcom-related-posts ul li {
+				list-style-type: none;
+				display: inline-block;
+			}
+		</style>
+		<?php
+	}
+
+	/**
+	 * Append related posts to the post content
+	 */
+	public function filter_the_content( $the_content ) {
+		global $wp_query, $wp_the_query;
+
+		// Related posts should only be appended on the main loop for is_singular() of acceptable post types
+		if ( $wp_query !== $wp_the_query || ! in_array( get_post_type(), $this->options['post-types'] ) || ! is_singular( get_post_type() ) )
+			return $the_content;
+
+		$related_posts = $this->get_related_posts();
+		$related_posts_html = array(
+				'<div class="wpcom-related-posts" id="' . esc_attr( 'wpcom-related-posts-' . get_the_ID() ) . '">',
+				'<ul>',
+			);
+		foreach( $related_posts as $related_post ) {
+			$related_posts_html[] = '<li>';
+			if ( has_post_thumbnail( $related_post->ID ) )
+				$related_posts_html[] = '<a href="' . get_permalink( $related_post->ID ) . '">' . get_the_post_thumbnail( $related_post->ID ) . '</a>';
+
+			$related_posts_html[] = '<a href="' . get_permalink( $related_post->ID ) . '">' . apply_filters( 'the_title', $related_post->post_title ) . '</a>';
+			$related_posts_html[] = '</li>';
+		}
+		$related_posts_html[] = '</ul>';
+		$related_posts_html[] = '</div>';
+
+		return $the_content . implode( PHP_EOL, $related_posts_html );
 	}
 
 	/**
