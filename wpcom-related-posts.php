@@ -102,7 +102,7 @@ class WPCOM_Related_Posts {
 							'query'       => $query,
 						),
 					'name'                => parse_url( site_url(), PHP_URL_HOST ),
-					'size'                => (int)$args['posts_per_page'],
+					'size'                => (int)$args['posts_per_page'] + 1,
 				);
 			if ( is_array( $args['post_type'] ) ) {
 				// @todo support for a set of post types
@@ -111,9 +111,18 @@ class WPCOM_Related_Posts {
 			}
 			$related_es_query = es_api_query_index( $es_args );
 			$related_posts = array_map( 'get_post', wp_list_pluck( $related_es_query->getResults(), 'id' ) );
+			foreach( $related_posts as $key => $related_post ) {
+				// Ignore the current post if it ends up being a related post
+				if ( $post_id == $related_post->ID )
+					unset( $related_posts[$key] );
+			}
+			// If we're still over the initial request, just return the first N
+			if ( count( $related_posts) > (int)$args['posts_per_page'] )
+				$related_posts = array_slice( $related_posts, 0, (int)$args['posts_per_page'] );
 		} else {
 			$related_query_args = array(
 				'posts_per_page' => (int)$args['posts_per_page'],
+				'post__not_in'   => $post_id,
 			);
 			$categories = get_the_category( $post_id );
 			if ( ! empty( $categories ) )
