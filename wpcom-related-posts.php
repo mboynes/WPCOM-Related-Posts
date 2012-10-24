@@ -78,15 +78,19 @@ class WPCOM_Related_Posts {
 	/**
 	 * @return array $related_posts An array of related WP_Post objects
 	 */
-	public function get_related_posts( $post_id, $args = array() ) {
+	public function get_related_posts( $post_id = null, $args = array() ) {
 
-		$related_posts = array();
+		if ( is_null( $post_id ) )
+			$post_id = get_the_ID();
 
 		$defaults = array(
 				'posts_per_page'          => 5,
-				'post_type'               => 'post',
+				'post_type'               => get_post_type( $post_id ),
 			);
 		$args = wp_parse_args( $args, $defaults );
+
+		$related_posts = array();
+
 		// Use Elastic Search for the results if it's available
 		if ( $this->is_elastic_search ) {
 
