@@ -267,7 +267,7 @@ class WPCOM_Related_Posts {
 		foreach( (array)explode( ' ', $text ) as $word ) {
 			// Strip characters we don't want
 			$word = trim( $word, '?.;,"' );
-			if ( strlen( $word ) <= 4 || in_array( $word, $this->stopwords ) )
+			if ( in_array( $word, $this->stopwords ) )
 				continue;
 
 			$keywords[] = $word;
