@@ -242,7 +242,8 @@ class WPCOM_Related_Posts {
 		} else {
 			$related_query_args = array(
 				'posts_per_page' => (int)$args['posts_per_page'],
-				'post__not_in'   => $post_id,
+				'post__not_in'   => array( $post_id ),
+				'post_type'      => $args['post_type'],
 			);
 			$categories = get_the_category( $post_id );
 			if ( ! empty( $categories ) )
