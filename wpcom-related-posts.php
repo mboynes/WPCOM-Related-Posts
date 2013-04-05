@@ -400,13 +400,15 @@ class WPCOM_Related_Posts {
 	 * @return string The WHERE clause, filtered with the date range
 	 */
 	public function filter_related_posts_where( $where = '' ) {
+		global $wpdb;
+
 		if ( ! is_array( $this->args['date_range'] ) ||
 			empty( $this->args['date_range']['from'] ) ||
 			empty( $this->args['date_range']['to'] ) )
 				return $where;
 
-		$where .= " AND post_date >= '" . date( 'Y-m-d', $this->args['date_range']['from'] ) . "'";
-		$where .= " AND post_date < '" . date( 'Y-m-d', $this->args['date_range']['to'] ) . "'";
+		$where .= $wpdb->prepare( ' AND post_date >= %s', date( 'Y-m-d', $this->args['date_range']['from'] ) );
+		$where .= $wpdb->prepare( ' AND post_date < %s', date( 'Y-m-d', $this->args['date_range']['to'] ) );
 
 		return $where;
 	}
