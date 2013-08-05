@@ -314,7 +314,7 @@ class WPCOM_Related_Posts {
 			}
 
 			if ( ! empty( $filters ) )
-				$es_args['filters'] = array( 'and' => $filters );
+				$es_args['filter'] = array( 'and' => $filters );
 
 			$es_args = apply_filters( 'wrp_es_api_search_index_args', $es_args, $current_post );
 			$related_es_query = es_api_search_index( $es_args, 'related-posts' );
