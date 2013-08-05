@@ -301,7 +301,7 @@ class WPCOM_Related_Posts {
 			}
 
 			if ( is_array( $args['date_range'] ) &&
-				! empty( $args['date_range']['from'] ) && 
+				! empty( $args['date_range']['from'] ) &&
 				! empty( $args['date_range']['to'] ) ) {
 					$filters[] = array(
 						'range'	=> array(
@@ -321,7 +321,10 @@ class WPCOM_Related_Posts {
 			$related_posts = array();
 			if ( is_array( $related_es_query ) && ! empty( $related_es_query['results']['hits'] ) ) {
 				foreach( $related_es_query['results']['hits'] as $hit ) {
-					$related_posts[] = get_post( $hit['_source']['id'] );
+					if ( isset( $hit['fields']['post_id'] ) )
+						$related_posts[] = get_post( $hit['fields']['post_id'] );
+					elseif ( isset( $hit['_source']['id'] ) )
+						$related_posts[] = get_post( $hit['_source']['id'] );
 				}
 			}
 			foreach( $related_posts as $key => $related_post ) {
